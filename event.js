@@ -1,6 +1,9 @@
 ;(function(){
   "use strict";
 
+  // Detect if the DOM is ready.
+  var DOMREADY = false;
+
   var toEvents = function(string) {
     return string.replace(/ +/, " ").split(" ");
   };
@@ -49,6 +52,30 @@
     });
   };
 
+  // Deal with DOMContentLoaded and the fallback.
+  var onDomReady = function(callback) {
+    document.on("readystatechange", function(event){
+      if (document.readyState === "complete" && !DOMREADY) {
+        DOMREADY = true;
+        callback.call(document, event);
+      }
+    });
+
+    document.on("DOMContentLoaded", function(event){
+      if (!DOMREADY) {
+        DOMREADY = true;
+        callback.call(document, event);
+      }
+    });
+
+    window.on("load", function(event){
+      if (!DOMREADY) {
+        DOMREADY = true;
+        callback.call(document, event);
+      }
+    });
+  };
+
   // Listen to events.
   //
   //     window.on("load", callback);
@@ -60,6 +87,11 @@
 
     // Hold the instance in its own var.
     var element = this;
+
+    // Deal with DOMContentLoaded.
+    if (events[0] === "ready") {
+      return onDomReady(selector);
+    }
 
     // Initialize the events object.
     if (!element.events) {
@@ -175,18 +207,18 @@
   // IE8 still uses the attachEvent scheme, so
   // we're just emulating correct behavior.
   if (!Element.prototype.addEventListener) {
-    Element.prototype.addEventListener = Window.prototype.addEventListener = function(event, callback) {
+    HTMLDocument.prototype.addEventListener = Element.prototype.addEventListener = Window.prototype.addEventListener = function(event, callback) {
       this.attachEvent("on" + event, function(event){
         event.target = event.srcElement;
         callback.call(this, event);
       }.bind(this));
     };
 
-    Element.prototype.removeEventListener = Window.prototype.removeEventListener = function(event, callback) {
+    HTMLDocument.prototype.removeEventListener = Element.prototype.removeEventListener = Window.prototype.removeEventListener = function(event, callback) {
       this.detachEvent("on" + event, callback);
     };
 
-    Element.prototype.dispatchEvent = Window.prototype.dispatchEvent = function(event) {
+    HTMLDocument.prototype.dispatchEvent = Element.prototype.dispatchEvent = Window.prototype.dispatchEvent = function(event) {
       this.fireEvent("on" + event.type, event);
     };
   }
@@ -221,7 +253,7 @@
   }
 
   // Set the event listeners.
-  Window.prototype.on = Element.prototype.on = on;
-  Window.prototype.off = Element.prototype.off = off;
-  Window.prototype.trigger = Element.prototype.trigger = trigger;
+  document.on = Window.prototype.on = Element.prototype.on = on;
+  document.off = Window.prototype.off = Element.prototype.off = off;
+  document.trigger = Window.prototype.trigger = Element.prototype.trigger = trigger;
 })();
