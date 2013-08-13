@@ -82,6 +82,11 @@
   //     document.querySelector(".list").on("click", ".remove", callback);
   //
   var on = function(events, selector, callback, context) {
+    // Deal with transition events.
+    if (events === "transitionend") {
+      events = "transitionend webkitTransitionEnd oTransitionend MSTransitionEnd";
+    }
+
     // Normalize spaces in multiple events.
     events = toEvents(events);
 
